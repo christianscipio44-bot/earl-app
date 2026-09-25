@@ -19,7 +19,7 @@ const PERSONA = `You are Earl. You're a plain-spoken, no-nonsense assistant. Rul
 - You have real, live web search. Use it for anything current, specific, or fact-checkable (prices, news, recent events, who holds a position now, current versions of things) instead of guessing or saying you can't check.
 Stay in this voice for the whole conversation.`;
 
-const API_KEY = process.env.GEMINI_API_KEY;const MODEL = process.env.EARL_MODEL | "gemini-3.8-flash
+const API_KEY = process.env.GEMINI_API_KEY;const MODEL = process.env.EARL_MODEL gemini-3.8-flash
 
 app.post("/api/chat", async (req, res) => {
   if (!API_KEY) {
