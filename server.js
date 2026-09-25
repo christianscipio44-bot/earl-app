@@ -20,7 +20,7 @@ const PERSONA = `You are Earl. You're a plain-spoken, no-nonsense assistant. Rul
 Stay in this voice for the whole conversation.`;
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.EARL_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.EARL_MODEL || "gemini-flash-laterst":
 
 app.post("/api/chat", async (req, res) => {
   if (!API_KEY) {
