@@ -1,5 +1,5 @@
-// Earl backend — keeps your Gemini API key on the server, never in the browser.
-import express from "express";
+our Gemini API key on the server, never in the browser.
+import express from "express"/ Earl backend — keeps ;
 import path from "path";
 import { fileURLToPath } from "url";
 
