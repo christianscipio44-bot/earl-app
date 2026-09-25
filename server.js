@@ -1,4 +1,4 @@
-// Earl backend — keeps your Anthropic API key on the server, never in the browser.
+// Earl backend — keeps your Gemini API key on the server, never in the browser.
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -19,12 +19,12 @@ const PERSONA = `You are Earl. You're a plain-spoken, no-nonsense assistant. Rul
 - You have real, live web search. Use it for anything current, specific, or fact-checkable (prices, news, recent events, who holds a position now, current versions of things) instead of guessing or saying you can't check.
 Stay in this voice for the whole conversation.`;
 
-const API_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = process.env.EARL_MODEL || "claude-sonnet-4-6";
+const API_KEY = process.env.GEMINI_API_KEY;
+const MODEL = process.env.EARL_MODEL || "gemini-2.5-flash";
 
 app.post("/api/chat", async (req, res) => {
   if (!API_KEY) {
-    return res.status(500).json({ error: "Server is missing ANTHROPIC_API_KEY. Set it in your hosting provider's environment variables." });
+    return res.status(500).json({ error: "Server is missing GEMINI_API_KEY. Set it in your hosting provider's environment variables." });
   }
 
   const { messages } = req.body;
@@ -32,43 +32,37 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "Expected { messages: [{role, content}, ...] }" });
   }
 
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }]
+  }));
+
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        system: PERSONA,
-        messages,
-        tools: [
-          {
-            type: "web_search_20250305",
-            name: "web_search",
-            max_uses: 3
-          }
-        ]
-      })
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: PERSONA }] },
+          contents,
+          tools: [{ google_search: {} }]
+        })
+      }
+    );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Anthropic API error:", response.status, errText);
+      console.error("Gemini API error:", response.status, errText);
       return res.status(response.status).json({ error: "Earl's brain didn't respond. Check the server logs." });
     }
 
     const data = await response.json();
-    // The response can mix text blocks with search-tool blocks;
-    // stitch every text block together into Earl's final answer.
-    const text = (data.content || [])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
+    const text = (data.candidates?.[0]?.content?.parts || [])
+      .filter((p) => p.text)
+      .map((p) => p.text)
       .join("");
-    res.json({ text });
+    res.json({ text: text || "Earl didn't have anything to say back — try rephrasing." });
   } catch (err) {
     console.error("Server error:", err);
     res.status(500).json({ error: "Something broke talking to the AI. Try again." });
